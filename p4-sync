@@ -1,0 +1,18 @@
+#!/usr/local/bin/php
+<?php
+
+if (count($argv) < 2) {
+    exit('p4-sync repository [branch or "trunk"]');
+}
+
+$repo = $argv[1];
+$cmd = 'p4 sync //depot/%s/...';
+if (count($argv) > 2) {
+    $path = $argv[2];
+    $type = $path == 'trunk' ? '' : 'branches/';
+    $repoPath = sprintf('%s/%s%s', $repo, $type, $path);
+} else {
+    $repoPath = $repo;
+}
+
+passthru(sprintf($cmd, $repoPath));

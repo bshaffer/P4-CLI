@@ -1,0 +1,113 @@
+#!/usr/local/bin/php
+<?php
+
+echo "\n";
+$args = array_merge(array(
+    'p' => false,
+    'show' =>  'all',
+), parse_args($argv));
+
+$path = isset($args[0]) ? $args[0] : './...';
+
+$list = '';
+if ($args['show'] == 'open' || $args['show'] == 'all') {
+    $list .= `p4 diff -sa $path`;
+}
+if ($args['show'] == 'unopen' || $args['show'] == 'all') {
+    $list .= `p4 diff -se $path`;
+}
+
+if(strlen($list) < 1) {
+	die();
+}
+
+$lines = explode("\n", trim($list));
+
+$diff = '';
+foreach($lines as $line) {
+	$fileDiff = `p4 diff -du -f $line`;
+    $diffLines = explode("\n", $fileDiff);
+    $oldFile = substr($diffLines[0], 4, strpos($diffLines[0], "\t") - 4);
+    $newFile = substr($diffLines[1], 4, strpos($diffLines[1], "\t") - 4);
+    $common = strrev(longest_common_prefix(array(strrev($oldFile), strrev($newFile))));
+    $common = str_replace('/'.$branch.'/', '/', $common);
+    $common = str_replace('/'.$repo.'/', '/', $common);
+    $common = $common[0] == '/' ? substr($common, 1) : $common;
+    $fileDiff = str_replace($oldFile, $common, str_replace($newFile, $common, $fileDiff));
+	$diff .= $fileDiff . "\n";
+}
+
+if (!$args['p']) {
+    $red    = "\033[31m";
+    $green  = "\033[32m";
+    $blue   = "\033[36m";
+    $yellow = "\033[33m";
+    $normal = "\033[0m";
+
+    $diff = preg_replace('/(@@.*@@)/', "$blue$1$normal", $diff);
+    $diff = preg_replace('/^(\+[^+].*)/m', "$green$1$normal", $diff);
+    $diff = preg_replace('/^(\-[^-].*)/m', "$red$1$normal", $diff);
+    $diff = preg_replace('/^(\-\-\-.*)/m', "$red$1$normal", $diff);
+    $diff = preg_replace('/^(\+\+\+.*)/m', "$green$1$normal", $diff);
+}
+
+die($diff);
+
+// ================
+// HELPER FUNCTIONS
+// ================
+
+function parse_args($argv){
+    array_shift($argv);
+    $out = array();
+    foreach ($argv as $arg){
+        if (substr($arg,0,2) == '--'){
+            $eqPos = strpos($arg,'=');
+            if ($eqPos === false){
+                $key = substr($arg,2);
+                $out[$key] = isset($out[$key]) ? $out[$key] : true;
+            } else {
+                $key = substr($arg,2,$eqPos-2);
+                $out[$key] = substr($arg,$eqPos+1);
+            }
+        } else if (substr($arg,0,1) == '-'){
+            if (substr($arg,2,1) == '='){
+                $key = substr($arg,1,1);
+                $out[$key] = substr($arg,3);
+            } else {
+                $chars = str_split(substr($arg,1));
+                foreach ($chars as $char){
+                    $key = $char;
+                    $out[$key] = isset($out[$key]) ? $out[$key] : true;
+                }
+            }
+        } else {
+            $out[] = $arg;
+        }
+    }
+    return $out;
+}
+
+function longest_common_prefix(array $arr, $ignore_empty = false)
+{
+    $prefix = NULL;
+    
+    foreach($arr as $s)
+    {
+        if($ignore_empty && empty($s)) continue;
+        
+        if(is_null($prefix))
+        {
+            $prefix = $s;
+        }
+        else
+        {
+            while(!empty($prefix) && substr($s, 0, strlen($prefix)) != $prefix)
+            {
+                $prefix = substr($prefix, 0, -1);
+            }
+        }
+    }
+    
+    return $prefix;
+}

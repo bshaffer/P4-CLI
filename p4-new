@@ -1,0 +1,3 @@
+#!/bin/bash
+
+find $(pwd -P) -type f ! -name '*~' -print0| xargs -0 p4 fstat 2>&1|awk '/no such file/{print $1}'
