@@ -11,12 +11,6 @@ $args = array_merge(array(
 if (isset($args[0])) {
     $path = $args[0];
 }
-else if (preg_match('/\/home\/httpd\/(\w*)\/devzone.*\/(\w*)\/(\w*)/', getcwd(), $matches)) {
-    $user = $matches[1];
-    $repo = $matches[2];
-    $branch = $matches[3];
-    $path = $branch == 'trunk' ? sprintf('//depot/%s/trunk/...', $repo) : sprintf('//depot/%s/branches/%s/...', $repo, $branch);
-}
 
 $files = array_filter(explode("\n", `p4 diff -se $path`));
 

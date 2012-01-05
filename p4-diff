@@ -10,11 +10,19 @@ $args = array_merge(array(
 $path = isset($args[0]) ? $args[0] : './...';
 
 $list = '';
-if ($args['show'] == 'open' || $args['show'] == 'all') {
-    $list .= `p4 diff -sa $path`;
-}
-if ($args['show'] == 'unopen' || $args['show'] == 'all') {
-    $list .= `p4 diff -se $path`;
+
+switch ($args['show']) {
+    case 'open':
+        $list .= `p4 diff -sa $path`;
+        break;
+    case 'unopen':
+        $list .= `p4 diff -se $path`;
+        break;
+    case 'all':
+    default:
+        $list .= `p4 diff -sl -f $path | grep ^diff | awk '{ print $2 }'`; // use exec to suppress warnings
+        break;
+
 }
 
 if(strlen($list) < 1) {
@@ -29,6 +37,9 @@ foreach($lines as $line) {
     $diffLines = explode("\n", $fileDiff);
     $oldFile = substr($diffLines[0], 4, strpos($diffLines[0], "\t") - 4);
     $newFile = substr($diffLines[1], 4, strpos($diffLines[1], "\t") - 4);
+
+    list($repo, $branch) = extract_repo_info($oldFile);
+
     $common = strrev(longest_common_prefix(array(strrev($oldFile), strrev($newFile))));
     $common = str_replace('/'.$branch.'/', '/', $common);
     $common = str_replace('/'.$repo.'/', '/', $common);
@@ -56,6 +67,19 @@ die($diff);
 // ================
 // HELPER FUNCTIONS
 // ================
+
+function extract_repo_info($path)
+{
+    if (preg_match('/\/(\w*)\/branches\/(\w*)\//', $path, $matches)) {
+        return array($matches[1], $matches[2]);
+    }
+
+    if (preg_match('/\/(\w*)\/trunk\//', $path, $matches)) {
+        return array($matches[1], 'trunk');
+    }
+
+    return array('', '');
+}
 
 function parse_args($argv){
     array_shift($argv);
