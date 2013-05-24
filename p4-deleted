@@ -1,2 +1,2 @@
 #!/bin/bash
-p4 diff -sd ./...
+p4 diff -sd $1

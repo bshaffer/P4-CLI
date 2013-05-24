@@ -6,14 +6,25 @@ $fromBranch = $argv[2];
 $toBranch = $argv[3];
 
 if (!$toBranch || !$fromBranch) {
-exit ("usage: p4-integrate [changelist] [from-branch] [to-branch]\n");
+  exit ("usage: p4-integrate [changelist] [from-branch] [to-branch]\n");
 }
+
+if ($fromBranch === 'trunk' && 0 !== strpos('branches', $toBranch)) {
+    $toBranch .= 'branches/'.$toBranch;
+}
+
 $files = array_filter(explode("\n", `p4 -z tag describe -s $changeList | grep depotFile`));
+
 foreach ($files as $i => $file) {
     $files[$i] = substr($file, strpos($file, '//depot'));
 }
+
 foreach ($files as $file) {
-    $toFile = str_replace($fromBranch, $toBranch, $file);
-    echo "p4 integrate $file@$changeList $toFile\n";
-    echo `p4 integrate $file@$changeList $toFile`;
+    if (strpos($file, $fromBranch) !== false) {
+         $toFile = str_replace($fromBranch, $toBranch, $file);
+         echo "p4 integrate $file@$changeList $toFile\n";
+         echo `p4 integrate $file@$changeList $toFile`;
+    } else {
+         echo "skipped $file...\n";
+    }
 }
