@@ -10,7 +10,7 @@ if (!$toBranch || !$fromBranch) {
 }
 
 if ($fromBranch === 'trunk' && 0 !== strpos('branches', $toBranch)) {
-    $toBranch .= 'branches/'.$toBranch;
+    $toBranch = 'branches/'.$toBranch;
 }
 
 $files = array_filter(explode("\n", `p4 -z tag describe -s $changeList | grep depotFile`));
